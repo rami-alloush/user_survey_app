@@ -2,23 +2,28 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.template import loader
+from django.views import generic
+
 from .models import Question, Choice
 
 
-def index(request):
-    latest_question_list = Question.objects.order_by('-pub_date')[:5]
-    context = {'latest_question_list': latest_question_list}
-    return render(request, 'survey/index.html', context)
+class IndexView(generic.ListView):
+    template_name = 'survey/index.html'
+    context_object_name = 'latest_question_list'
+
+    def get_queryset(self):
+        """Return the last five published questions."""
+        return Question.objects.order_by('-pub_date')[:5]
 
 
-def detail(request, question_id):
-    # try:
-    #     question = Question.objects.get(pk=question_id)
-    # except Question.DoesNotExist:
-    #     raise Http404("Question does not exist")
-    # return render(request, 'survey/detail.html', {'question': question})
-    question = get_object_or_404(Question, pk=question_id)  # get_list_or_404()
-    return render(request, 'survey/detail.html', {'question': question})
+class DetailView(generic.DetailView):
+    model = Question
+    template_name = 'survey/detail.html'
+
+
+class ResultsView(generic.DetailView):
+    model = Question
+    template_name = 'survey/results.html'
 
 
 def vote(request, question_id):
@@ -38,8 +43,3 @@ def vote(request, question_id):
         # with POST data. This prevents data from being posted twice if a
         # user hits the Back button.
         return HttpResponseRedirect(reverse('survey:results', args=(question.id,)))
-
-
-def results(request, question_id):
-    question = get_object_or_404(Question, pk=question_id)
-    return render(request, 'survey/results.html', {'question': question})
