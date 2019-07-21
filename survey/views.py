@@ -21,23 +21,32 @@ class IndexView(generic.ListView):
         ).order_by('-pub_date')[:5]
 
 
+class ResultsView(generic.ListView):
+    model = Question
+    template_name = 'survey/results.html'
+
+
+def ThanksView(request):
+    template_name = 'survey/thanks.html'
+    return render(request, template_name,)
+
+
 class DetailView(generic.DetailView):
     model = Question
     template_name = 'survey/detail.html'
 
     def get_queryset(self):
-        """
-        Excludes any questions that aren't published yet.
-        """
+        """ Exclude any unpublished questions. """
         return Question.objects.filter(pub_date__lte=timezone.now())
 
+    # def render_to_response(self, context):
+    #     print("render_to_response")
+    #     if len(self.model.objects.all()) == 0:
+    #         return HttpResponseRedirect(reverse('survey:detail', args=(11,)))
+    #     return super().render_to_response(context)
 
-class ResultsView(generic.DetailView):
-    model = Question
-    template_name = 'survey/results.html'
 
-
-def vote(request, question_id):
+def VoteView(request, question_id):
     question = get_object_or_404(Question, pk=question_id)
     try:
         selected_choice = question.choice_set.get(pk=request.POST['choice'])
@@ -53,4 +62,9 @@ def vote(request, question_id):
         # Always return an HttpResponseRedirect after successfully dealing
         # with POST data. This prevents data from being posted twice if a
         # user hits the Back button.
-        return HttpResponseRedirect(reverse('survey:results', args=(question.id,)))
+        next_question_id = question.id + 1
+        next_question = Question.objects.filter(pk=next_question_id).count()
+        if (next_question > 0):
+            return HttpResponseRedirect(reverse('survey:detail', args=(next_question_id,)))
+        else:
+            return HttpResponseRedirect(reverse('survey:thanks',))
