@@ -21,6 +21,7 @@ class IndexView(generic.ListView):
         """
         Return the current users scores
         """
+        self.request.session['score'] = 0
         user = self.request.user
         if user.is_authenticated:
             return Score.objects.filter(
