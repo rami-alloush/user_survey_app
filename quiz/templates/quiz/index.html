@@ -2,7 +2,7 @@
 
 {% block content %}
 <div class="card-deck mb-3 text-center">
-    <div class="card mb-4 shadow-sm">
+    <div class="card mb-12 shadow-sm">
         <div class="card-header">
             <h4 class="my-0 font-weight-normal">User Knowldge Test</h4>
         </div>
@@ -14,9 +14,23 @@
             <a href="{% url 'quiz:detail' 1 %}" class="btn btn-lg btn-block btn-primary" role="button">Start
                 Quiz</a>
             {% else %}
-                You must log in first to take the quiz
+            You must log in first to take the quiz
             {% endif %}
         </div>
     </div>
+    {% if score_list %}
+    <div class="card mb-12 shadow-sm">
+        <div class="card-header">
+            <h4 class="my-0 font-weight-normal">Previous Scores</h4>
+        </div>
+        <div class="card-body">
+            <ul class="list-unstyled mt-3 mb-4">
+                {% for score in score_list %}
+                <li>{{ score }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% endif %}
 </div>
 {% endblock %}

@@ -8,9 +8,26 @@ from django.utils import timezone
 from .models import Question, Score
 
 
-def IndexView(request):
-    request.session['score'] = 0
-    return render(request, 'quiz/index.html')
+# def IndexView(request):
+#     request.session['score'] = 0
+#     return render(request, 'quiz/index.html')
+
+
+class IndexView(generic.ListView):
+    model = Score
+    template_name = 'quiz/index.html'
+
+    def get_queryset(self):
+        """
+        Return the current users scores
+        """
+        user = self.request.user
+        if user.is_authenticated:
+            return Score.objects.filter(
+                user=self.request.user
+            )
+        else:
+            return None
 
 
 class DetailView(generic.DetailView):
