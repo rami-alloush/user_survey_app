@@ -7,12 +7,11 @@
             <h4 class="my-0 font-weight-normal">User Knowldge Test</h4>
         </div>
         <div class="card-body">
-            <ul class="list-unstyled mt-3 mb-4">
-                <li>Take the Quiz</li>
-            </ul>
-            {% if request.user.is_authenticated %}
+            {% if request.user.is_authenticated and score_list.count < 2 %}
             <a href="{% url 'quiz:detail' 1 %}" class="btn btn-lg btn-block btn-primary" role="button">Start
                 Quiz</a>
+            {% elif score_list.count == 2 %}
+            You can't take the quiz more than two times :/
             {% else %}
             You must log in first to take the quiz
             {% endif %}
