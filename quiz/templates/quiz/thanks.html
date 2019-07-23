@@ -1,7 +1,9 @@
-{% extends 'survey/base.html' %}
+{% extends 'quiz/base.html' %}
 
 {% block content %}
 
-<h1>Survey Completed. Thank You :)</h1>
+<h1>Quiz Completed. Thank You :)</h1>
+
+<h3>You final score is: {{ request.session.score }}</h3>
 
 {% endblock content %}

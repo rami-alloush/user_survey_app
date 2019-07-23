@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Course, Question
+from .models import Course, Question, Score
 
 
 class QuestionInline(admin.TabularInline):
@@ -17,11 +17,6 @@ class CourseAdmin(admin.ModelAdmin):
 
 
 class QuestionAdmin(admin.ModelAdmin):
-    fieldsets = [
-        (None,               {'fields': ['question_text']}),
-        ('Date information', {'fields': [
-         'pub_date'], 'classes': ['collapse']}),
-    ]
     list_display = ('question_text', 'pub_date',
                     'course', 'was_published_recently')
     list_filter = ['pub_date']
@@ -30,3 +25,4 @@ class QuestionAdmin(admin.ModelAdmin):
 
 admin.site.register(Course, CourseAdmin)
 admin.site.register(Question, QuestionAdmin)
+admin.site.register(Score)

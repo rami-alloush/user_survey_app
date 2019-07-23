@@ -15,9 +15,9 @@ class Course(models.Model):
 class Question(models.Model):
     question_text = models.CharField(max_length=300)
     question_choice_1 = models.CharField(max_length=300)
-    question_choice_2 = models.CharField(max_length=300)
-    question_choice_3 = models.CharField(max_length=300)
-    question_choice_4 = models.CharField(max_length=300)
+    question_choice_2 = models.CharField(max_length=100)
+    question_choice_3 = models.CharField(max_length=100)
+    question_choice_4 = models.CharField(max_length=100)
     question_answer = models.IntegerField(
         default=1, validators=[MinValueValidator(1), MaxValueValidator(4)])
     pub_date = models.DateTimeField('Date published', default=timezone.now)
@@ -37,4 +37,7 @@ class Score(models.Model):
                              on_delete=models.CASCADE)
     date = models.DateTimeField('Quiz Date', default=timezone.now)
     score = models.IntegerField(default=0)
+
+    def __str__(self):
+        return self.user.username + " - score: " + str(self.score)
 

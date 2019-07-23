@@ -4,6 +4,10 @@
 
 {% if error_message %}<div class="alert alert-danger" role="alert">{{ error_message }}</div>{% endif %}
 
+<h3>You score is: {{ request.session.score }}</h3>
+
+<hr>
+
 <h1>{{ question.id }}. {{ question.question_text }}</h1>
 
 <form action="{% url 'quiz:vote' question.id %}" method="post">
@@ -21,7 +25,7 @@
     <input type="radio" name="choice" id="choice4" value="4">
     <label for="choice4">{{ question.question_choice_4 }}</label><br>
 
-    <input type="submit"  class="btn btn-primary" value="Send">
+    <input type="submit" class="btn btn-primary" value="Send">
 </form>
 
 {% endblock content %}

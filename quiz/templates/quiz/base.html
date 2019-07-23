@@ -38,8 +38,14 @@
         <h5 class="my-0 mr-md-auto font-weight-normal">Quiz Section</h5>
         <nav class="my-2 my-md-0 mr-md-3">
             <a class="p-2 text-dark" href="{% url 'quiz:index' %}">Home</a>
+
+            <a class="btn btn-outline-primary" href="#">Contact Us</a>
+            {% if request.user.is_authenticated %}
+            Welcome, {{ request.user.username }}
+            {% else %}
+            <a href="/accounts/login">Login</a>
+            {% endif %}
         </nav>
-        <a class="btn btn-outline-primary" href="#">Contact Us</a>
     </div>
 
     <div class="px-3 pt-md-5 pb-md-4 mx-auto text-center">
@@ -49,20 +55,6 @@
     <div class="container">
         <hr>
         {% block content %}
-        <div class="card-deck mb-3 text-center">
-            <div class="card mb-4 shadow-sm">
-                <div class="card-header">
-                    <h4 class="my-0 font-weight-normal">User Knowldge Test</h4>
-                </div>
-                <div class="card-body">
-                    <ul class="list-unstyled mt-3 mb-4">
-                        <li>Take the Quiz</li>
-                    </ul>
-                    <a href="{% url 'quiz:detail' 1 %}" class="btn btn-lg btn-block btn-primary" role="button">Start
-                        Quiz</a>
-                </div>
-            </div>
-        </div>
         {% endblock %}
 
         <footer class="pt-4 my-md-5 pt-md-5 border-top">
