@@ -5,17 +5,39 @@ from django.shortcuts import get_object_or_404, render
 from django.template import loader
 from django.views import generic
 from django.utils import timezone
-from .models import Question, Score
+from .models import Course, Question, Score
+from .forms import CourseSelectForm
 
 
-# def IndexView(request):
-#     request.session['score'] = 0
-#     return render(request, 'quiz/index.html')
+def startQuiz(request):
+    request.session['score'] = 0
+    # if this is a POST request we need to process the form data
+    if request.method == 'POST':
+        # create a form instance and populate it with data from the request:
+        form = CourseSelectForm(request.POST)
+        # check whether it's valid:
+        if form.is_valid():
+            # process the data in form.cleaned_data as required
+            course_id = form['course_name'].value()
+            # redirect to a new URL:
+            # return HttpResponseRedirect('/quiz/thanks/')
+            return HttpResponseRedirect(reverse('quiz:detail', args=(course_id,1),))
+
+    # if a GET (or any other method)
+    else:
+        return HttpResponseRedirect('/quiz/')
 
 
 class IndexView(generic.ListView):
     model = Score
     template_name = 'quiz/index.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(IndexView, self).get_context_data(**kwargs)
+        context.update({
+            'form': CourseSelectForm(),
+        })
+        return context
 
     def get_queryset(self):
         """

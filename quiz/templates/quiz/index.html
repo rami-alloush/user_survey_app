@@ -7,11 +7,13 @@
             <h4 class="my-0 font-weight-normal">User Knowldge Test</h4>
         </div>
         <div class="card-body">
-            {% if request.user.is_authenticated and score_list.count < 2 %}
-            <a href="{% url 'quiz:detail' 1 %}" class="btn btn-lg btn-block btn-primary" role="button">Start
-                Quiz</a>
-            {% elif score_list.count == 2 %}
-            You can't take the quiz more than two times :/
+            {% if request.user.is_authenticated %}
+            <form action="/quiz/start/" method="post">
+                {% csrf_token %}
+                {{ form }}
+                <br>
+                <input type="submit" class="btn btn-block btn-primary" value="Start Quiz">
+            </form>
             {% else %}
             You must log in first to take the quiz
             {% endif %}
@@ -25,7 +27,7 @@
         <div class="card-body">
             <ul class="list-unstyled mt-3 mb-4">
                 {% for score in score_list %}
-                <li>{{ score }}</li>
+                <li>{{ score.user }} - {{ score.course }}: {{ score.score }}</li>
                 {% endfor %}
             </ul>
         </div>

@@ -26,7 +26,10 @@ class QuestionAdmin(admin.ModelAdmin):
         # Disable delete
         return False
 
+class ScoreAdmin(admin.ModelAdmin):
+    list_display = ['user', 'score', 'course']
+
 
 admin.site.register(Course, CourseAdmin)
 admin.site.register(Question, QuestionAdmin)
-admin.site.register(Score)
+admin.site.register(Score, ScoreAdmin)

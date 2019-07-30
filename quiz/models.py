@@ -35,6 +35,7 @@ class Question(models.Model):
 class Score(models.Model):
     user = models.ForeignKey(User, verbose_name='User',
                              on_delete=models.CASCADE)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
     date = models.DateTimeField('Quiz Date', default=timezone.now)
     score = models.IntegerField(default=0)
 
