@@ -4,6 +4,7 @@ from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.template import loader
+from django.contrib import messages
 from django.views import generic
 from django.utils import timezone
 from .models import Course, Question, Score
@@ -24,12 +25,28 @@ def startQuiz(request):
         if form.is_valid():
             # process the data in form.cleaned_data as required
             course_id = form['course_name'].value()
+            course_name = form.cleaned_data['course_name']
+
+            # Check if user can still take quiz for this course
+            if request.user.is_authenticated:
+                user_course_scores = Score.objects.filter(
+                    user=request.user,
+                    course_id=course_id,
+                ).count()
+                course_attempts = getattr(QuizSettings, 'COURSE_ATTEMPTS')
+                if (user_course_scores >= course_attempts):
+                    messages.add_message(request, messages.ERROR,
+                             'You have already attempted the %s quiz %s times!' % (course_name, course_attempts))
+                    return HttpResponseRedirect('/quiz/')
+
             next_question_id = getNextRandQuestion(course_id)
             # redirect to a new URL:
             return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id,)))
 
     # if a GET (or any other method)
     else:
+        messages.add_message(request, messages.ERROR,
+                             'You are not allowed to access this page!')
         return HttpResponseRedirect('/quiz/')
 
 
