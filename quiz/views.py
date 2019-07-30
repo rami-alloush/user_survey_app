@@ -1,3 +1,4 @@
+import random
 from django.utils.datastructures import MultiValueDictKeyError
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.urls import reverse
@@ -7,10 +8,14 @@ from django.views import generic
 from django.utils import timezone
 from .models import Course, Question, Score
 from .forms import CourseSelectForm
+from quiz import settings as QuizSettings
 
 
 def startQuiz(request):
+    # Reset quiz session
     request.session['score'] = 0
+    request.session['count'] = 0
+
     # if this is a POST request we need to process the form data
     if request.method == 'POST':
         # create a form instance and populate it with data from the request:
@@ -19,9 +24,9 @@ def startQuiz(request):
         if form.is_valid():
             # process the data in form.cleaned_data as required
             course_id = form['course_name'].value()
+            next_question_id = getNextRandQuestion(course_id)
             # redirect to a new URL:
-            # return HttpResponseRedirect('/quiz/thanks/')
-            return HttpResponseRedirect(reverse('quiz:detail', args=(course_id,1),))
+            return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id,)))
 
     # if a GET (or any other method)
     else:
@@ -43,7 +48,10 @@ class IndexView(generic.ListView):
         """
         Return the current users scores
         """
+        # Enforce quiz session reset
         self.request.session['score'] = 0
+        self.request.session['count'] = 0
+
         user = self.request.user
         if user.is_authenticated:
             return Score.objects.filter(
@@ -59,7 +67,7 @@ class DetailView(generic.DetailView):
 
 
 def VoteView(request, question_id):
-    # Reset score on start
+    # Check for valid choice
     question = get_object_or_404(Question, pk=question_id)
     try:
         selected_choice = int(request.POST['choice'])
@@ -70,23 +78,31 @@ def VoteView(request, question_id):
             'error_message': "You didn't select a choice.",
         })
     else:
-        # Always return an HttpResponseRedirect after successfully dealing
-        # with POST data. This prevents data from being posted twice if a
-        # user hits the Back button.
+        # Check if answer is correct and update score
         if question.question_answer == selected_choice:
             print('Correct answer :)')
             request.session['score'] = request.session['score'] + 1
         else:
             print('Wrong answer :(')
 
-        next_question_id = question.id + 1
-        next_question = Question.objects.filter(pk=next_question_id).count()
-        if (next_question > 0):
-            return HttpResponseRedirect(reverse('quiz:detail', args=(next_question_id,), ))
+        # Increase questions count
+        questions_count = request.session['count'] + 1
+        request.session['count'] = questions_count
+
+        # Decide the next question and redirect
+        course_id = question.course_id
+        next_question_id = getNextRandQuestion(course_id)
+
+        # Check the limit for number of questions per quiz
+        questions_limit = getattr(QuizSettings, 'QUIZ_QUESTIONS')
+        print("questions_count", questions_count)
+        if (questions_count < questions_limit):
+            return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id), ))
         else:
             # Last page, save score
             if request.user.is_authenticated:
                 score = Score(user=request.user,
+                              course_id=course_id,
                               score=request.session['score'])
                 score.save()
             return HttpResponseRedirect(reverse('quiz:thanks',))
@@ -95,3 +111,9 @@ def VoteView(request, question_id):
 def ThanksView(request):
     template_name = 'quiz/thanks.html'
     return render(request, template_name,)
+
+
+def getNextRandQuestion(course_id):
+    course_questions = list(Question.objects.filter(
+        course=course_id).values_list('pk', flat=True))
+    return random.choice(course_questions)
