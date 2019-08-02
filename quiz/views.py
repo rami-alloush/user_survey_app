@@ -5,6 +5,7 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.template import loader
 from django.contrib import messages
+from django.contrib.auth.models import User
 from django.views import generic
 from django.utils import timezone
 from .models import Course, Question, Score
@@ -29,6 +30,7 @@ def startQuiz(request):
 
             # Check if user can still take quiz for this course
             if request.user.is_authenticated:
+                print("User is authenticated is start quiz")
                 user_course_scores = Score.objects.filter(
                     user=request.user,
                     course_id=course_id,
@@ -36,7 +38,7 @@ def startQuiz(request):
                 course_attempts = getattr(QuizSettings, 'COURSE_ATTEMPTS')
                 if (user_course_scores >= course_attempts):
                     messages.add_message(request, messages.ERROR,
-                             'You have already attempted the %s quiz %s times!' % (course_name, course_attempts))
+                                         'You have already attempted the %s quiz %s times!' % (course_name, course_attempts))
                     return HttpResponseRedirect('/quiz/')
 
             next_question_id = getNextRandQuestion(course_id)
@@ -129,6 +131,17 @@ def ThanksView(request):
     template_name = 'quiz/thanks.html'
     return render(request, template_name,)
 
+
+class AdminView(generic.ListView):
+    model = User
+    template_name = 'quiz/admin.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(AdminView, self).get_context_data(**kwargs)
+        context.update({
+            'form': SendTokenForm(),
+        })
+        return context
 
 def getNextRandQuestion(course_id):
     course_questions = list(Question.objects.filter(

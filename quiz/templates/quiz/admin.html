@@ -1,0 +1,53 @@
+{% extends 'quiz/base.html' %}
+
+{% block content %}
+
+{% if messages %}
+{% for message in messages %}
+<div class="alert {% if message.tags %}alert-{% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}danger{% else %}{{ message.tags }}{% endif %}{% endif %}"
+    role="alert">{{ message }}</div>
+{% endfor %}
+{% endif %}
+
+<div class="card-deck mb-3 text-center">
+    {% if perms.quiz.change_user and user_list %}
+    <div class="card mb-12 shadow-sm">
+        <div class="card-header">
+            <h4 class="my-0 font-weight-normal">System Users</h4>
+        </div>
+        <div class="card-body">
+            <ul class="list-unstyled mt-3 mb-4">
+                <table class="table">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th scope="col">#</th>
+                            <th scope="col">First Name</th>
+                            <th scope="col">Last Name</th>
+                            <th scope="col">E-mail</th>
+                            <th scope="col">Send Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in user_list %}
+                        <tr>
+                            <th scope="row">{{ forloop.counter }}</th>
+                            <td>{{ user.first_name }}</td>
+                            <td>{{ user.last_name }}</td>
+                            <td>{{ user.email }}</td>
+                            <td>
+                                <form action="" method="POST">
+                                    {% csrf_token %}
+                                    {{ form }}
+                                    <input type="submit" class="default" value="Submit">
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </ul>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
