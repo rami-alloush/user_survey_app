@@ -1,16 +1,21 @@
 import random
+import datetime
 from django.utils.datastructures import MultiValueDictKeyError
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.template import loader
 from django.contrib import messages
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model
+from django.core.mail import send_mail, EmailMessage
 from django.views import generic
 from django.utils import timezone
-from .models import Course, Question, Score
+from .models import Course, Question, Score, QuizToken
 from .forms import CourseSelectForm
 from quiz import settings as QuizSettings
+from django.conf import settings
+
+User = get_user_model()
 
 
 def startQuiz(request):
@@ -139,9 +144,53 @@ class AdminView(generic.ListView):
     def get_context_data(self, **kwargs):
         context = super(AdminView, self).get_context_data(**kwargs)
         context.update({
-            'form': SendTokenForm(),
+            'form': None,
         })
         return context
+
+
+def CreateToken(request):
+    # if this is a POST request we need to process the form data
+    if request.method == 'POST':
+        data = request.POST
+        user = User.objects.get(id=data['user_id'])
+        new_token = QuizToken(user=user)
+        new_token.save()
+        sendTokenEmail(new_token, user)
+
+        messages.add_message(request, messages.INFO,
+                             'Token created and email sent for user with ID: %s' % user.id)
+        return HttpResponseRedirect('/quiz/admin')
+
+    # if a GET (or any other method)
+    else:
+        messages.add_message(request, messages.ERROR,
+                             'You are not allowed to access this page!')
+        return HttpResponseRedirect('/quiz/admin')
+
+
+def sendTokenEmail(token, user):
+    # send_mail(
+    #     'You can access the quiz now!',
+    #     'Hi,\nYou now have access to the quiz using this link: ' + str(token.token) + '\nYour access will expire after 7 days on: ' + str(timezone.now() + datetime.timedelta(days=7)),
+    #     'Nora@rmasoft.com',
+    #     [user.email],
+    #     # fail_silently=False,
+    # )
+
+    # send as HTML
+    msg = EmailMessage('You can access the quiz now!',
+                       'Hi,<br>You now have access to the quiz using ' +
+                       '<a href="http://127.0.0.1:8000/quiz?token=' + str(token.token) + '">this link</a>' +
+                       '<br>Your access will expire after 7 days on: ' +
+                       str(timezone.now() + datetime.timedelta(days=7)) +
+                       '<br><br>Best Regards,',
+                       'Nora@example.com',
+                       [user.email]
+                       )
+    msg.content_subtype = "html"
+    msg.send()
+
 
 def getNextRandQuestion(course_id):
     course_questions = list(Question.objects.filter(

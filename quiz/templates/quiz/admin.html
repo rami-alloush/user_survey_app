@@ -35,10 +35,10 @@
                             <td>{{ user.last_name }}</td>
                             <td>{{ user.email }}</td>
                             <td>
-                                <form action="" method="POST">
+                                <form action="/quiz/admin/create_token/" method="POST">
                                     {% csrf_token %}
-                                    {{ form }}
-                                    <input type="submit" class="default" value="Submit">
+                                    <input type="hidden" name="user_id" value="{{user.id}}">
+                                    <input type="submit" class="default" value="Create Access">
                                 </form>
                             </td>
                         </tr>

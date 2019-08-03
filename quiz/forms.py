@@ -1,13 +1,6 @@
 # from crispy_forms.helper import FormHelper
 from django import forms
-from .models import Course, AccessToken
-
-
-# class SendTokenForm(forms.ModelForm):
-#     class Meta:
-#         model = AccessToken
-#         fields = ['user']
-#         widgets = {'user': forms.HiddenInput()}
+from .models import Course
 
 
 class CourseSelectForm(forms.Form):

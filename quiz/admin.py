@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Course, Question, Score
+from .models import Course, Question, Score, QuizToken
 
 
 class QuestionInline(admin.TabularInline):
@@ -26,10 +26,19 @@ class QuestionAdmin(admin.ModelAdmin):
         # Disable delete
         return False
 
+
 class ScoreAdmin(admin.ModelAdmin):
     list_display = ['user', 'score', 'course']
+
+
+class TokenAdmin(admin.ModelAdmin):
+    list_display = ('user', 'token', 'date',
+                    'still_active')
+    list_filter = ['date']
+    search_fields = ['user_id']
 
 
 admin.site.register(Course, CourseAdmin)
 admin.site.register(Question, QuestionAdmin)
 admin.site.register(Score, ScoreAdmin)
+admin.site.register(QuizToken, TokenAdmin)
