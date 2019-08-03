@@ -35,7 +35,8 @@ def startQuiz(request):
 
             # Check if user can still take quiz for this course
             if request.user.is_authenticated:
-                print("User is authenticated is start quiz")
+                print("User is authenticated to start quiz")
+                # Check for Scores
                 user_course_scores = Score.objects.filter(
                     user=request.user,
                     course_id=course_id,
@@ -44,6 +45,16 @@ def startQuiz(request):
                 if (user_course_scores >= course_attempts):
                     messages.add_message(request, messages.ERROR,
                                          'You have already attempted the %s quiz %s times!' % (course_name, course_attempts))
+                    return HttpResponseRedirect('/quiz/')
+
+                # Check for Tokens
+                user_active_tokens = QuizToken.objects.filter(
+                    user=request.user,
+                ).count()
+                print(user_active_tokens)
+                if (user_active_tokens < 1):
+                    messages.add_message(request, messages.ERROR,
+                                         'You don\'t have active tokens to access the quiz :/')
                     return HttpResponseRedirect('/quiz/')
 
             next_question_id = getNextRandQuestion(course_id)
@@ -156,7 +167,8 @@ def CreateToken(request):
         user = User.objects.get(id=data['user_id'])
         new_token = QuizToken(user=user)
         new_token.save()
-        sendTokenEmail(new_token, user)
+        domain = request.META['HTTP_HOST']
+        sendTokenEmail(new_token, user, domain)
 
         messages.add_message(request, messages.INFO,
                              'Token created and email sent for user with ID: %s' % user.id)
@@ -169,7 +181,7 @@ def CreateToken(request):
         return HttpResponseRedirect('/quiz/admin')
 
 
-def sendTokenEmail(token, user):
+def sendTokenEmail(token, user, domain):
     # send_mail(
     #     'You can access the quiz now!',
     #     'Hi,\nYou now have access to the quiz using this link: ' + str(token.token) + '\nYour access will expire after 7 days on: ' + str(timezone.now() + datetime.timedelta(days=7)),
@@ -181,7 +193,7 @@ def sendTokenEmail(token, user):
     # send as HTML
     msg = EmailMessage('You can access the quiz now!',
                        'Hi,<br>You now have access to the quiz using ' +
-                       '<a href="http://127.0.0.1:8000/quiz?token=' + str(token.token) + '">this link</a>' +
+                       '<a href="http://' + domain + '/quiz?token=' + str(token.token) + '">this link</a>' +
                        '<br>Your access will expire after 7 days on: ' +
                        str(timezone.now() + datetime.timedelta(days=7)) +
                        '<br><br>Best Regards,',
