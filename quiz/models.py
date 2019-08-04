@@ -43,17 +43,20 @@ class Score(models.Model):
     def __str__(self):
         return self.user.username + " - score: " + str(self.score)
 
+
 class TokenManager(models.Manager):
     def get_queryset(self):
         now = timezone.now()
-        week_ago = now - datetime.timedelta(days=-7)
-        return super(TokenManager, self).get_queryset().filter(date__range=[now, week_ago])
+        week_ago = now - datetime.timedelta(days=7)
+        return super(TokenManager, self).get_queryset().filter(date__gte=week_ago)
+
 
 class QuizToken(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
                              on_delete=models.CASCADE)
     token = models.CharField(max_length=255)
     date = models.DateTimeField(default=timezone.now)
+    objects = models.Manager()
     active = TokenManager()
 
     def still_active(self):

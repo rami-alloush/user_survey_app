@@ -48,11 +48,9 @@ def startQuiz(request):
                     return HttpResponseRedirect('/quiz/')
 
                 # Check for Tokens
-                user_active_tokens = QuizToken.objects.filter(
-                    user=request.user,
-                ).count()
-                print(user_active_tokens)
-                if (user_active_tokens < 1):
+                user_active_tokens_count = QuizToken.active.filter(
+                    user=request.user).count()
+                if (user_active_tokens_count < 1):
                     messages.add_message(request, messages.ERROR,
                                          'You don\'t have active tokens to access the quiz :/')
                     return HttpResponseRedirect('/quiz/')
