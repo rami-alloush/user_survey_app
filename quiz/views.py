@@ -1,5 +1,6 @@
 import random
 import datetime
+from django.utils import timezone
 from django.utils.datastructures import MultiValueDictKeyError
 from django.http import HttpResponse, HttpResponseRedirect, Http404
 from django.urls import reverse
@@ -35,21 +36,36 @@ def startQuiz(request):
 
             # Check if user can still take quiz for this course
             if request.user.is_authenticated:
-                print("User is authenticated to start quiz")
-                # Check for Scores
+
+                # Check for Previous Attemps
                 user_course_scores = Score.objects.filter(
                     user=request.user,
                     course_id=course_id,
                 ).count()
                 course_attempts = getattr(QuizSettings, 'COURSE_ATTEMPTS')
+                # Fail for Attempts Limit
                 if (user_course_scores >= course_attempts):
                     messages.add_message(request, messages.ERROR,
                                          'You have already attempted the %s quiz %s times!' % (course_name, course_attempts))
                     return HttpResponseRedirect('/quiz/')
 
+                # Check for Last Attempt time
+                yesterday = timezone.now() - datetime.timedelta(days=1)
+                user_recent_attempts = Score.objects.filter(
+                    user=request.user,
+                    course_id=course_id,
+                    date__gte=yesterday,
+                ).count()
+                # Fail for recent Attempt
+                if (user_recent_attempts > 0):
+                    messages.add_message(request, messages.ERROR,
+                                         'You must wait 24 hrs to access the quiz for this course again :/')
+                    return HttpResponseRedirect('/quiz/')
+
                 # Check for Tokens
                 user_active_tokens_count = QuizToken.active.filter(
                     user=request.user).count()
+                # Fail for no active token
                 if (user_active_tokens_count < 1):
                     messages.add_message(request, messages.ERROR,
                                          'You don\'t have active tokens to access the quiz :/')

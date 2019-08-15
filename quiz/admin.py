@@ -40,7 +40,7 @@ class QuestionAdmin(ModelAdmin):
 
 
 class ScoreAdmin(ModelAdmin):
-    list_display = ['user', 'score', 'course']
+    list_display = ['user', 'score', 'course', 'date']
 
 
 class TokenAdmin(ModelAdmin):
