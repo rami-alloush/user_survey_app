@@ -1,0 +1,3 @@
+*.pyc
+quiz/__pycache__/views.cpython-35.pyc
+quiz/__pycache__/forms.cpython-35.pyc
