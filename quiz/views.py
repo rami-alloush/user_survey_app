@@ -23,6 +23,7 @@ def startQuiz(request):
     # Reset quiz session
     request.session['score'] = 0
     request.session['count'] = 0
+    request.session['seen_questions'] = []
 
     # if this is a POST request we need to process the form data
     if request.method == 'POST':
@@ -100,6 +101,7 @@ class IndexView(generic.ListView):
         # Enforce quiz session reset
         self.request.session['score'] = 0
         self.request.session['count'] = 0
+        self.request.session['seen_questions'] = []
 
         user = self.request.user
         if user.is_authenticated:
@@ -113,6 +115,13 @@ class IndexView(generic.ListView):
 class DetailView(generic.DetailView):
     model = Question
     template_name = 'quiz/detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(DetailView, self).get_context_data(**kwargs)
+        seen_questions = self.request.session['seen_questions']
+        seen_questions.append(context['object'].id)
+        self.request.session['seen_questions'] = seen_questions
+        return context
 
 
 def VoteView(request, question_id):
@@ -139,15 +148,18 @@ def VoteView(request, question_id):
         request.session['count'] = questions_count
 
         # Decide the next question and redirect
-        chapter_id = question.chapter_id
         course_id = question.chapter.course.id
-        next_question_id = getNextRandQuestion(chapter_id)
+        seen_questions = request.session['seen_questions']
+        next_question_id = getNextRandQuestion(course_id, seen_questions)
+        if next_question_id is None:
+            messages.add_message(request, messages.ERROR,
+                                 'There are no enough questions in the DB for this course!')
+            return HttpResponseRedirect('/quiz/')
 
         # Check the limit for number of questions per quiz
         questions_limit = getattr(QuizSettings, 'QUIZ_QUESTIONS')
-        print("questions_count", questions_count)
         if (questions_count < questions_limit):
-            return HttpResponseRedirect(reverse('quiz:detail', args=(chapter_id, next_question_id), ))
+            return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id), ))
         else:
             # Last page, save score
             if request.user.is_authenticated:
@@ -160,6 +172,7 @@ def VoteView(request, question_id):
 
 def ThanksView(request):
     template_name = 'quiz/thanks.html'
+    print(request.session['seen_questions'])
     return render(request, template_name,)
 
 
@@ -219,8 +232,11 @@ def sendTokenEmail(token, user, domain):
     msg.send()
 
 
-def getNextRandQuestion(course_id):
+def getNextRandQuestion(course_id, seen_questions=[]):
     # Filter with chapter
-    course_questions = list(Question.objects.filter(
-        chapter=course_id).values_list('pk', flat=True))
-    return random.choice(course_questions)
+    try:
+        course_questions = list(Question.objects.filter(
+            chapter__course_id=course_id).exclude(id__in=seen_questions).values_list('pk', flat=True))
+        return random.choice(course_questions)
+    except (ValueError, IndexError) as err:
+        print("No Enough Questions in DB:", err.args)
