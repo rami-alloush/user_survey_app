@@ -123,14 +123,15 @@ def VoteView(request, question_id):
         request.session['count'] = questions_count
 
         # Decide the next question and redirect
-        course_id = question.course_id
-        next_question_id = getNextRandQuestion(course_id)
+        chapter_id = question.chapter_id
+        course_id = question.chapter.course.id
+        next_question_id = getNextRandQuestion(chapter_id)
 
         # Check the limit for number of questions per quiz
         questions_limit = getattr(QuizSettings, 'QUIZ_QUESTIONS')
         print("questions_count", questions_count)
         if (questions_count < questions_limit):
-            return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id), ))
+            return HttpResponseRedirect(reverse('quiz:detail', args=(chapter_id, next_question_id), ))
         else:
             # Last page, save score
             if request.user.is_authenticated:
@@ -203,6 +204,7 @@ def sendTokenEmail(token, user, domain):
 
 
 def getNextRandQuestion(course_id):
+    # Filter with chapter
     course_questions = list(Question.objects.filter(
-        course=course_id).values_list('pk', flat=True))
+        chapter=course_id).values_list('pk', flat=True))
     return random.choice(course_questions)

@@ -13,6 +13,14 @@ class Course(models.Model):
         return self.course_name
 
 
+class Chapter(models.Model):
+    chapter_name = models.CharField(max_length=300)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return "{}: {}".format(self.course.course_name, self.chapter_name)
+
+
 class Question(models.Model):
     question_text = models.CharField(max_length=300)
     question_choice_1 = models.CharField(max_length=300)
@@ -23,7 +31,7 @@ class Question(models.Model):
         default=1, validators=[MinValueValidator(1), MaxValueValidator(4)])
     pub_date = models.DateTimeField('Date published', default=timezone.now)
 
-    course = models.ForeignKey(Course, on_delete=models.CASCADE)
+    chapter = models.ForeignKey(Chapter, on_delete=models.CASCADE, default=1)
 
     def __str__(self):
         return self.question_text
