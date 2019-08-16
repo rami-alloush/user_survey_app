@@ -4,11 +4,12 @@
 
 {% if error_message %}<div class="alert alert-danger" role="alert">{{ error_message }}</div>{% endif %}
 
+<h3>{{ question.chapter }}</h3>
 <h3>You score is: {{ request.session.score }}</h3>
 
 <hr>
 
-<h1>{{ question.id }}. {{ question.question_text }}</h1>
+<h1>{{ question.question_text }}</h1>
 
 <form action="{% url 'quiz:vote' question.id %}" method="post">
     {% csrf_token %}
