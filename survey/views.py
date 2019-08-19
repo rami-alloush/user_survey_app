@@ -21,11 +21,6 @@ class IndexView(generic.ListView):
         ).order_by('-pub_date')[:5]
 
 
-class ResultsView(generic.ListView):
-    model = Question
-    template_name = 'survey/results.html'
-
-
 def ThanksView(request):
     template_name = 'survey/thanks.html'
     return render(request, template_name,)

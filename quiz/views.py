@@ -23,6 +23,7 @@ def startQuiz(request):
     # Reset quiz session
     request.session['score'] = 0
     request.session['count'] = 0
+    request.session['result'] = ''
     request.session['seen_questions'] = []
 
     # if this is a POST request we need to process the form data
@@ -103,6 +104,7 @@ class IndexView(generic.ListView):
         # Enforce quiz session reset
         self.request.session['score'] = 0
         self.request.session['count'] = 0
+        self.request.session['result'] = ''
         self.request.session['seen_questions'] = []
 
         user = self.request.user
@@ -169,13 +171,18 @@ def VoteView(request, question_id):
                               course_id=course_id,
                               score=request.session['score'])
                 score.save()
-            return HttpResponseRedirect(reverse('quiz:thanks',))
+            # Determine result
+            pass_score = getattr(QuizSettings, 'PASS_SCORE')
+            if (score.score > pass_score):
+                request.session['result'] = "Pass"
+            else:
+                request.session['result'] = "Fail"
+            return HttpResponseRedirect(reverse('quiz:thanks', ))
 
 
 def ThanksView(request):
     template_name = 'quiz/thanks.html'
-    print(request.session['seen_questions'])
-    return render(request, template_name,)
+    return render(request, template_name, )
 
 
 class AdminView(generic.ListView):
