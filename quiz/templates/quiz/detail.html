@@ -8,6 +8,8 @@
 <h3>You score is: {{ request.session.score }}</h3>
 
 <hr>
+Remeaning Time: <b><span id="remeaning_time"></span></b>
+<hr>
 
 <h1>{{ question.question_text }}</h1>
 
@@ -29,4 +31,36 @@
     <input type="submit" class="btn btn-primary" value="Send">
 </form>
 
+<script>
+    // Set the date we're counting down to
+    var countDownDate = new Date("{{ quiz_start }}").getTime();
+
+    // Update the count down every 1 second
+    var x = setInterval(function () {
+
+        // Get today's date and time
+        var now = new Date(); // Local time
+        var nowUtc = new Date(now.getTime() + (now.getTimezoneOffset() * 60000));
+
+        // Find the distance between now and the count down date
+        var distance = countDownDate - nowUtc;
+
+        // Time calculations for days, hours, minutes and seconds
+        var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // Display the result in the element with id="demo"
+        document.getElementById("remeaning_time").innerHTML = hours + "h "
+            + minutes + "m " + seconds + "s ";
+
+        // If the count down is finished, write some text redirect to end page
+        if (distance < 0) {
+            clearInterval(x);
+            document.getElementById("remeaning_time").innerHTML = "EXPIRED";
+            document.location.href = "{% url 'quiz:thanks' %}";
+        }
+    }, 1000);
+</script>
 {% endblock %}

@@ -2,10 +2,12 @@
 
 {% block content %}
 
+{% if error_message %}<div class="alert alert-danger" role="alert">{{ error_message }}</div>{% endif %}
+
 <h1>Quiz Completed. Thank You :)</h1>
 
-<h3>You final score is: {{ request.session.score }}</h3>
+<h3>Your final score is: {{ request.session.score }}</h3>
 
-<h3>You final result is: <b>{{ request.session.result }}</b></h3>
+<h3>Your final result is: <b>{{ request.session.result }}</b></h3>
 
 {% endblock content %}

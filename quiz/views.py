@@ -20,12 +20,6 @@ User = get_user_model()
 
 
 def startQuiz(request):
-    # Reset quiz session
-    request.session['score'] = 0
-    request.session['count'] = 0
-    request.session['result'] = ''
-    request.session['seen_questions'] = []
-
     # if this is a POST request we need to process the form data
     if request.method == 'POST':
         # create a form instance and populate it with data from the request:
@@ -34,6 +28,7 @@ def startQuiz(request):
         if form.is_valid():
             # process the data in form.cleaned_data as required
             course_id = form['course_name'].value()
+            request.session['course_id'] = course_id
             course_name = form.cleaned_data['course_name']
 
             # Check if user can still take quiz for this course
@@ -75,9 +70,22 @@ def startQuiz(request):
                                          'You don\'t have active tokens to access the quiz of this course :/')
                     return HttpResponseRedirect('/quiz/')
 
-            next_question_id = getNextRandQuestion(course_id)
-            # redirect to a new URL:
-            return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id,)))
+                # Everythong is OK, start quiz session
+                request.session['active_quiz'] = True
+                request.session['score'] = 0
+                request.session['count'] = 0
+                request.session['result'] = ''
+                request.session['seen_questions'] = []
+                # Set Quiz End Time
+                quiz_duration = getattr(QuizSettings, 'QUIZ_DURATION_MINUTES')
+                now = timezone.now()
+                end_time = now + datetime.timedelta(minutes=quiz_duration)
+                request.session['quiz_start'] = end_time.strftime(
+                    '%b %d, %Y %H:%M:%S')  # UTC time
+
+                next_question_id = getNextRandQuestion(course_id)
+                # redirect to a new URL:
+                return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id,)))
 
     # if a GET (or any other method)
     else:
@@ -122,9 +130,11 @@ class DetailView(generic.DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(DetailView, self).get_context_data(**kwargs)
+        # add current question to seen questions
         seen_questions = self.request.session['seen_questions']
         seen_questions.append(context['object'].id)
         self.request.session['seen_questions'] = seen_questions
+        context['quiz_start'] = self.request.session['quiz_start']
         return context
 
 
@@ -158,29 +168,35 @@ def VoteView(request, question_id):
         if next_question_id is None:
             messages.add_message(request, messages.ERROR,
                                  'There are no enough questions in the DB for this course!')
-            return HttpResponseRedirect('/quiz/')
+            return HttpResponseRedirect(reverse('quiz:thanks', ))
 
         # Check the limit for number of questions per quiz
         questions_limit = getattr(QuizSettings, 'QUIZ_QUESTIONS')
         if (questions_count < questions_limit):
             return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id), ))
         else:
-            # Last page, save score
-            if request.user.is_authenticated:
-                score = Score(user=request.user,
-                              course_id=course_id,
-                              score=request.session['score'])
-                score.save()
-            # Determine result
-            pass_score = getattr(QuizSettings, 'PASS_SCORE')
-            if (score.score > pass_score):
-                request.session['result'] = "Pass"
-            else:
-                request.session['result'] = "Fail"
             return HttpResponseRedirect(reverse('quiz:thanks', ))
 
 
 def ThanksView(request):
+    # Last page, save score
+    if request.user.is_authenticated:
+        if request.session['active_quiz']:
+            score = Score(user=request.user,
+                          course_id=request.session['course_id'],
+                          score=request.session['score'])
+            score.save()
+
+            # Determine result
+            pass_score = getattr(QuizSettings, 'PASS_SCORE')
+            if (score.score >= pass_score):
+                request.session['result'] = "Pass"
+            else:
+                request.session['result'] = "Fail"
+            request.session['active_quiz'] = False
+        else:
+            return HttpResponseRedirect(reverse('quiz:index', ))
+
     template_name = 'quiz/thanks.html'
     return render(request, template_name, )
 
