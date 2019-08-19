@@ -8,7 +8,15 @@
 <h3>You score is: {{ request.session.score }}</h3>
 
 <hr>
-Remeaning Time: <b><span id="remeaning_time"></span></b>
+<div class="row">
+    <div class="col">
+        Remeaning Time: <b><span id="remeaning_time"></span></b>
+    </div>
+    <div class="col" style="text-align: right;">
+        Question No: <b>{{ count }}</b> of <b>{{ questions_limit }}</b>
+    </div>
+</div>
+
 <hr>
 
 <h1>{{ question.question_text }}</h1>

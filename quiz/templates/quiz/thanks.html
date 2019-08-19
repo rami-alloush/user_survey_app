@@ -2,7 +2,12 @@
 
 {% block content %}
 
-{% if error_message %}<div class="alert alert-danger" role="alert">{{ error_message }}</div>{% endif %}
+{% if messages %}
+{% for message in messages %}
+<div class="alert {% if message.tags %}alert-{% if message.level == DEFAULT_MESSAGE_LEVELS.ERROR %}danger{% else %}{{ message.tags }}{% endif %}{% endif %}"
+    role="alert">{{ message }}</div>
+{% endfor %}
+{% endif %}
 
 <h1>Quiz Completed. Thank You :)</h1>
 

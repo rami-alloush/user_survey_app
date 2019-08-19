@@ -135,6 +135,9 @@ class DetailView(generic.DetailView):
         seen_questions.append(context['object'].id)
         self.request.session['seen_questions'] = seen_questions
         context['quiz_start'] = self.request.session['quiz_start']
+        questions_limit = getattr(QuizSettings, 'QUIZ_QUESTIONS')
+        context['count'] = self.request.session['count'] + 1
+        context['questions_limit'] = questions_limit
         return context
 
 
