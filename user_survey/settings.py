@@ -31,7 +31,8 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    'quiz.apps.QuizConfig',    
+    'quiz.apps.QuizConfig',
+    # 'cal.apps.CalConfig',
     'survey.apps.SurveyConfig',
     'django.contrib.admin',
     'django.contrib.auth',
@@ -128,7 +129,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'nwra36839@gmail.com'
 EMAIL_HOST_PASSWORD = 'a@A14171417'
-  
+
 # Email - Local
 # if DEBUG:
 #     EMAIL_HOST = 'localhost'

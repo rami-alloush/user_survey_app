@@ -65,11 +65,13 @@ def startQuiz(request):
 
                 # Check for Tokens
                 user_active_tokens_count = QuizToken.active.filter(
-                    user=request.user).count()
+                    user=request.user,
+                    course_id=course_id,
+                ).count()
                 # Fail for no active token
                 if (user_active_tokens_count < 1):
                     messages.add_message(request, messages.ERROR,
-                                         'You don\'t have active tokens to access the quiz :/')
+                                         'You don\'t have active tokens to access the quiz of this course :/')
                     return HttpResponseRedirect('/quiz/')
 
             next_question_id = getNextRandQuestion(course_id)
@@ -183,7 +185,7 @@ class AdminView(generic.ListView):
     def get_context_data(self, **kwargs):
         context = super(AdminView, self).get_context_data(**kwargs)
         context.update({
-            'form': None,
+            'courses': Course.objects.all(),
         })
         return context
 
@@ -193,7 +195,8 @@ def CreateToken(request):
     if request.method == 'POST':
         data = request.POST
         user = User.objects.get(id=data['user_id'])
-        new_token = QuizToken(user=user)
+        course = Course.objects.get(id=data['course_id'])
+        new_token = QuizToken(user=user, course=course)
         new_token.save()
         domain = request.META['HTTP_HOST']
         sendTokenEmail(new_token, user, domain)

@@ -37,6 +37,11 @@
                             <td>
                                 <form action="/quiz/admin/create_token/" method="POST">
                                     {% csrf_token %}
+                                    <select name='course_id'>
+                                        {% for course in courses %}
+                                        <option value='{{course.id}}'>{{ course.course_name }}</option>
+                                        {% endfor %}
+                                    </select>
                                     <input type="hidden" name="user_id" value="{{user.id}}">
                                     <input type="submit" class="default" value="Create Access">
                                 </form>

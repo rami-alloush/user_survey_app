@@ -44,7 +44,7 @@ class ScoreAdmin(ModelAdmin):
 
 
 class TokenAdmin(ModelAdmin):
-    list_display = ('user', 'token', 'date',
+    list_display = ('user', 'token', 'date', 'course',
                     'still_active')
     list_filter = ['date']
     search_fields = ['user_id']

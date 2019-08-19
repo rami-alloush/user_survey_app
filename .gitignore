@@ -20,4 +20,8 @@ Thumbs.db
 /data.tar.gz
 /static_collected
 /node_modules
-# </DEFAULT>
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class

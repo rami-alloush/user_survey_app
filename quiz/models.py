@@ -64,6 +64,8 @@ class QuizToken(models.Model):
                              on_delete=models.CASCADE)
     token = models.CharField(max_length=255)
     date = models.DateTimeField(default=timezone.now)
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, default='1')
+
     objects = models.Manager()
     active = TokenManager()
 
