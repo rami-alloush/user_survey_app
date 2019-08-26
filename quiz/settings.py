@@ -2,7 +2,7 @@ from django.conf import settings
 
 # Set limit for number of questions per quiz
 QUIZ_QUESTIONS = 5
-QUIZ_DURATION_MINUTES = 1
+QUIZ_DURATION_MINUTES = 60
 PASS_SCORE = 3
 COURSE_ATTEMPTS = 3
 

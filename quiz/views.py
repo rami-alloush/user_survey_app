@@ -7,6 +7,7 @@ from django.urls import reverse
 from django.shortcuts import get_object_or_404, render
 from django.template import loader
 from django.contrib import messages
+from django.db.models import Count
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail, EmailMessage
 from django.views import generic
@@ -17,6 +18,10 @@ from quiz import settings as QuizSettings
 from django.conf import settings
 
 User = get_user_model()
+questions_limit = getattr(QuizSettings, 'QUIZ_QUESTIONS')
+course_attempts = getattr(QuizSettings, 'COURSE_ATTEMPTS')
+quiz_duration = getattr(QuizSettings, 'QUIZ_DURATION_MINUTES')
+pass_score = getattr(QuizSettings, 'PASS_SCORE')
 
 
 def startQuiz(request):
@@ -39,7 +44,6 @@ def startQuiz(request):
                     user=request.user,
                     course_id=course_id,
                 ).count()
-                course_attempts = getattr(QuizSettings, 'COURSE_ATTEMPTS')
                 # Fail for Attempts Limit
                 if (user_course_scores >= course_attempts):
                     messages.add_message(request, messages.ERROR,
@@ -70,14 +74,24 @@ def startQuiz(request):
                                          'You don\'t have active tokens to access the quiz of this course :/')
                     return HttpResponseRedirect('/quiz/')
 
+                # Check for enough questions in course
+                course_questions = Question.objects.all().values(
+                    'chapter__course').filter(
+                    chapter__course=course_id).annotate(
+                    total=Count('chapter__course'))
+                course_questions_total = course_questions[0]['total']
+                # Fail for not enough questions
+                if (course_questions_total < questions_limit):
+                    messages.add_message(request, messages.ERROR,
+                                         'There are no enough questions in the DB for this course!')
+                    return HttpResponseRedirect(reverse('quiz:index', ))
+
                 # Everythong is OK, start quiz session
                 request.session['active_quiz'] = True
-                request.session['score'] = 0
-                request.session['count'] = 0
                 request.session['result'] = ''
                 request.session['seen_questions'] = []
+                request.session['seen_questions_scores'] = []
                 # Set Quiz End Time
-                quiz_duration = getattr(QuizSettings, 'QUIZ_DURATION_MINUTES')
                 now = timezone.now()
                 end_time = now + datetime.timedelta(minutes=quiz_duration)
                 request.session['quiz_start'] = end_time.strftime(
@@ -110,10 +124,10 @@ class IndexView(generic.ListView):
         Return the current users scores
         """
         # Enforce quiz session reset
-        self.request.session['score'] = 0
-        self.request.session['count'] = 0
+        self.request.session['active_quiz'] = False
         self.request.session['result'] = ''
         self.request.session['seen_questions'] = []
+        self.request.session['seen_questions_scores'] = []
 
         user = self.request.user
         if user.is_authenticated:
@@ -130,68 +144,103 @@ class DetailView(generic.DetailView):
 
     def get_context_data(self, **kwargs):
         context = super(DetailView, self).get_context_data(**kwargs)
-        # add current question to seen questions
+        question_id = context['object'].id
         seen_questions = self.request.session['seen_questions']
-        seen_questions.append(context['object'].id)
-        self.request.session['seen_questions'] = seen_questions
+        seen_questions_scores = self.request.session['seen_questions_scores']
+        # Check if new question
+        if not question_id in seen_questions:
+            # New Question
+            # add current question to seen questions
+            seen_questions.append(question_id)
+            self.request.session['seen_questions'] = seen_questions
+            seen_questions_scores.append(None)
+            self.request.session['seen_questions_scores'] = seen_questions_scores
+
+        print(seen_questions)
+        print(seen_questions_scores)
+
+        question_index = seen_questions.index(question_id)
+        try:
+            question_score = seen_questions_scores[question_index]
+            # Check if answered before
+            if question_score is not None:
+                context['send'] = True
+        except:
+            pass
+
+        # Send start time with context
         context['quiz_start'] = self.request.session['quiz_start']
-        questions_limit = getattr(QuizSettings, 'QUIZ_QUESTIONS')
-        context['count'] = self.request.session['count'] + 1
-        context['questions_limit'] = questions_limit
+        # Send questions progress with context
+        context['current_question'] = question_index + 1
+        context['total_questions'] = questions_limit
+        if question_index > 0:
+            context['previous'] = True
+        if question_index + 1 < questions_limit:
+            context['next'] = True
+        if len(seen_questions) == questions_limit and not None in seen_questions_scores:
+            context['can_submit'] = True
         return context
 
 
 def VoteView(request, question_id):
-    # Check for valid choice
     question = get_object_or_404(Question, pk=question_id)
-    try:
+    course_id = question.chapter.course.id
+    seen_questions = request.session['seen_questions']
+    seen_questions_scores = request.session['seen_questions_scores']
+    # Get clicked button
+    if request.POST.get("send"):
+        # Check if first time question
         selected_choice = int(request.POST['choice'])
-    except (KeyError, MultiValueDictKeyError):
-        # Redisplay the question voting form.
-        return render(request, 'quiz/detail.html', {
-            'question': question,
-            'error_message': "You didn't select a choice.",
-        })
-    else:
+        question_id_index = seen_questions.index(question_id)
         # Check if answer is correct and update score
         if question.question_answer == selected_choice:
             print('Correct answer :)')
-            request.session['score'] = request.session['score'] + 1
+            seen_questions_scores[question_id_index] = 1
         else:
             print('Wrong answer :(')
+            seen_questions_scores[question_id_index] = 0
 
-        # Increase questions count
-        questions_count = request.session['count'] + 1
-        request.session['count'] = questions_count
+        # Update session
+        request.session['seen_questions_scores'] = seen_questions_scores
+        return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, question_id), ))
 
-        # Decide the next question and redirect
-        course_id = question.chapter.course.id
-        seen_questions = request.session['seen_questions']
-        next_question_id = getNextRandQuestion(course_id, seen_questions)
-        if next_question_id is None:
-            messages.add_message(request, messages.ERROR,
-                                 'There are no enough questions in the DB for this course!')
-            return HttpResponseRedirect(reverse('quiz:thanks', ))
+    else:
+        # No answer submitted
+        current_question_id_index = seen_questions.index(question_id)
+        if request.POST.get("previous"):
+            previous_question_id = seen_questions[current_question_id_index - 1]
+            return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, previous_question_id), ))
 
-        # Check the limit for number of questions per quiz
-        questions_limit = getattr(QuizSettings, 'QUIZ_QUESTIONS')
-        if (questions_count < questions_limit):
-            return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id), ))
-        else:
+        if request.POST.get("next"):
+            # check if seen next question exist
+            try:
+                next_question_id = seen_questions[current_question_id_index + 1]
+                return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id), ))
+            except:
+                # Create new question
+                if (len(seen_questions) < questions_limit):
+                    next_question_id = getNextRandQuestion(
+                        course_id, seen_questions)
+                    return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id), ))
+                else:
+                    # No Next btn should be visible
+                    return HttpResponseRedirect(reverse('quiz:thanks', ))
+
+        if request.POST.get("submit_quiz"):
             return HttpResponseRedirect(reverse('quiz:thanks', ))
 
 
 def ThanksView(request):
     # Last page, save score
+    score_total = sum(request.session['seen_questions_scores'])
     if request.user.is_authenticated:
         if request.session['active_quiz']:
             score = Score(user=request.user,
                           course_id=request.session['course_id'],
-                          score=request.session['score'])
+                          score=score_total)
             score.save()
 
             # Determine result
-            pass_score = getattr(QuizSettings, 'PASS_SCORE')
             if (score.score >= pass_score):
                 request.session['result'] = "Pass"
             else:
@@ -201,7 +250,7 @@ def ThanksView(request):
             return HttpResponseRedirect(reverse('quiz:index', ))
 
     template_name = 'quiz/thanks.html'
-    return render(request, template_name, )
+    return render(request, template_name, {'score': score_total})
 
 
 class AdminView(generic.ListView):

@@ -5,7 +5,6 @@
 {% if error_message %}<div class="alert alert-danger" role="alert">{{ error_message }}</div>{% endif %}
 
 <h3>{{ question.chapter }}</h3>
-<h3>You score is: {{ request.session.score }}</h3>
 
 <hr>
 <div class="row">
@@ -13,33 +12,72 @@
         Remeaning Time: <b><span id="remeaning_time"></span></b>
     </div>
     <div class="col" style="text-align: right;">
-        Question No: <b>{{ count }}</b> of <b>{{ questions_limit }}</b>
+        Question No: <b>{{ current_question }}</b> of <b>{{ total_questions }}</b>
     </div>
 </div>
 
 <hr>
 
-<h1>{{ question.question_text }}</h1>
+<h1>{{ question.question_text }} {% if send %}[Answered]{% endif %}</h1>
 
-<form action="{% url 'quiz:vote' question.id %}" method="post">
+<form action="{% url 'quiz:vote' question.id %}" name="choice_form" method="post">
     {% csrf_token %}
 
-    <input type="radio" name="choice" id="choice1" value="1">
+    <input type="radio" name="choice" id="choice1" value="1" {% if send %}disabled{% endif %}>
     <label for="choice1">{{ question.question_choice_1 }}</label><br>
 
-    <input type="radio" name="choice" id="choice2" value="2">
+    <input type="radio" name="choice" id="choice2" value="2" {% if send %}disabled{% endif %}>
     <label for="choice2">{{ question.question_choice_2 }}</label><br>
 
-    <input type="radio" name="choice" id="choice3" value="3">
+    <input type="radio" name="choice" id="choice3" value="3" {% if send %}disabled{% endif %}>
     <label for="choice3">{{ question.question_choice_3 }}</label><br>
 
-    <input type="radio" name="choice" id="choice4" value="4">
+    <input type="radio" name="choice" id="choice4" value="4" {% if send %}disabled{% endif %}>
     <label for="choice4">{{ question.question_choice_4 }}</label><br>
 
-    <input type="submit" class="btn btn-primary" value="Send">
+    {% if not send %}
+    <input type="submit" class="btn btn-primary" name="send" value="Send" disabled>
+    {% endif %}
+
+    <hr>
+
+    <div class="row justify-content-between py-2">
+        <div class="col-1">
+            {% if previous %}
+            <input type="submit" class="btn btn-primary" name="previous" value="Previous">
+            {% endif %}
+        </div>
+        <div class="col-1">
+            {% if next %}
+            <input type="submit" class="btn btn-primary" name="next" value="Next">
+            {% endif %}
+        </div>
+    </div>
+
+    <hr>
+
+    <div class="row justify-content-center py-2">
+        <div class="col-6">
+            <h5>You can't submit the quiz until you answer all questions</h5>
+            {% if can_submit %}
+            <input type="submit" class="btn btn-lg btn-block btn-primary" name="submit_quiz" value="Submit Quiz">
+            {% endif %}
+        </div>
+    </div>
+
 </form>
 
+
 <script>
+    // Choice acticate submit
+    var rad = document.choice_form.choice;
+    var prev = null;
+    for (var i = 0; i < rad.length; i++) {
+        rad[i].addEventListener('change', function () {
+            document.choice_form.send.removeAttribute('disabled');
+        });
+    }
+
     // Set the date we're counting down to
     var countDownDate = new Date("{{ quiz_start }}").getTime();
 
