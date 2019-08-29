@@ -173,6 +173,7 @@ class DetailView(generic.DetailView):
         # Send questions progress with context
         context['current_question'] = question_index + 1
         context['total_questions'] = questions_limit
+        context['question_score'] = zip(seen_questions, seen_questions_scores)
         if question_index > 0:
             context['previous'] = True
         if question_index + 1 < questions_limit:
@@ -202,7 +203,14 @@ def VoteView(request, question_id):
 
         # Update session
         request.session['seen_questions_scores'] = seen_questions_scores
-        return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, question_id), ))
+
+        # Create new question
+        if (len(seen_questions) < questions_limit):
+            next_question_id = getNextRandQuestion(
+                course_id, seen_questions)
+            return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, next_question_id), ))
+        else:
+            return HttpResponseRedirect(reverse('quiz:detail', args=(course_id, question_id), ))
 
     else:
         # No answer submitted

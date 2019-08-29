@@ -18,9 +18,23 @@
 
 <hr>
 
+<div class="row">
+    <div class="col">
+        Unanswered Questions:
+        {% for q, s in question_score %}
+        {% if s is None %}
+        <a class="btn btn-sm bg-success text-white"
+            href="{% url 'quiz:detail' question.chapter.course.id q %}">{{ forloop.counter }}</a>
+        {% endif %}
+        {% endfor %}
+    </div>
+</div>
+
+<hr>
+
 <h1>{{ question.question_text }} {% if send %}[Answered]{% endif %}</h1>
 
-<form action="{% url 'quiz:vote' question.id %}" name="choice_form" method="post">
+<form action=" {% url 'quiz:vote' question.id %}" name="choice_form" method="post">
     {% csrf_token %}
 
     <input type="radio" name="choice" id="choice1" value="1" {% if send %}disabled{% endif %}>
